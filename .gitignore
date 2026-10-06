@@ -1,0 +1,12 @@
+# Terraform downloads providers here - never commit
+.terraform/
+
+# State can contain secrets - never commit
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Cluster credentials - never commit
+kubeconfig-*
+
+# NOTE: .terraform.lock.hcl SHOULD be committed (it pins exact provider versions)
