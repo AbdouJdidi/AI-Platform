@@ -1,0 +1,20 @@
+# Ingress = a routing rule for Traefik:
+# "requests for host whoami.localhost go to the whoami Service".
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whoami
+  namespace: demo
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: whoami.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whoami
+                port:
+                  name: http

@@ -1,0 +1,5 @@
+# A namespace = a "folder" inside the cluster to group an app's objects.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo

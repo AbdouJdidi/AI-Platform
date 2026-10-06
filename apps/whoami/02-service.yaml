@@ -1,0 +1,14 @@
+# Service = one stable address in front of the pods + load balancing between them.
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami
+  namespace: demo
+spec:
+  type: ClusterIP
+  selector:
+    app: whoami               # sends traffic to pods with this label
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
