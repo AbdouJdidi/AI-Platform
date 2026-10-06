@@ -52,5 +52,18 @@ resource "helm_release" "traefik" {
       enabled        = true
       isDefaultClass = true
     }
+    updateStrategy = {
+      type = "RollingUpdate"
+      rollingUpdate = {
+        maxUnavailable = 1
+        maxSurge       = 0
+      }
+    }
+    providers = {
+      kubernetesIngress = {
+        publishedService = { enabled = false }
+        ingressEndpoint  = { ip = "127.0.0.1" }
+      }
+    }
   })]
 }

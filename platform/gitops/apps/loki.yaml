@@ -1,0 +1,67 @@
+# LOGS storage: Loki keeps all container logs, searchable from Grafana.
+# "SingleBinary" mode = one small pod, perfect for a laptop.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: loki
+    targetRevision: 7.3.0
+    helm:
+      releaseName: loki
+      valuesObject:
+        fullnameOverride: loki
+        deploymentMode: SingleBinary
+
+        loki:
+          auth_enabled: false          # single user, no tenants
+          commonConfig:
+            replication_factor: 1
+          storage:
+            type: filesystem           # store on a disk, no S3 needed
+          schemaConfig:
+            configs:
+              - from: "2024-04-01"
+                store: tsdb
+                object_store: filesystem
+                schema: v13
+                index:
+                  prefix: index_
+                  period: 24h
+          # Delete logs older than 3 days so the disk doesn't fill up.
+          compactor:
+            retention_enabled: true
+            delete_request_store: filesystem
+          limits_config:
+            retention_period: 72h
+
+        singleBinary:
+          replicas: 1
+          persistence:
+            size: 5Gi
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 512Mi }
+
+        # Turn off everything a big production Loki needs but we don't.
+        read: { replicas: 0 }
+        write: { replicas: 0 }
+        backend: { replicas: 0 }
+        gateway: { enabled: false }
+        chunksCache: { enabled: false }
+        resultsCache: { enabled: false }
+        lokiCanary: { enabled: false }
+        test: { enabled: false }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
