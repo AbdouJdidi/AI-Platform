@@ -47,6 +47,10 @@ spec:
               limits: { memory: 128Mi }
 
         grafana:
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin
+            passwordKey: AbdouJdidi2003.
           ingress:
             enabled: true
             ingressClassName: traefik
