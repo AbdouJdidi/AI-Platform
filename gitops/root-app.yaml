@@ -1,0 +1,21 @@
+# ROOT application ("app of apps").
+# You apply this ONE file by hand, once. After that, Argo CD reads the
+# gitops/apps/ folder and creates every application it finds there.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/AbdouJdidi/AI-platform.git 
+    targetRevision: main
+    path: gitops/apps
+  destination:
+    server: https://kubernetes.default.svc   
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true      # delete from cluster what you delete from Git
+      selfHeal: true   # undo manual changes made directly in the cluster

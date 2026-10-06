@@ -1,0 +1,21 @@
+# Tells Argo CD: "deploy the YAML files in apps/whoami/ into namespace demo".
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: whoami
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/AbdouJdidi/AI-platform.git   
+    targetRevision: main
+    path: apps/whoami
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
