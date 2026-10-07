@@ -33,7 +33,7 @@ spec:
               name: http
           env:
             - name: OLLAMA_BASE_URL
-              value: http://ollama.ollama.svc.cluster.local:11434
+              value: http://host.docker.internal:11434
           resources:
             requests:
               cpu: 100m
