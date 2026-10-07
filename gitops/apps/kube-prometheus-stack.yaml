@@ -49,8 +49,8 @@ spec:
         grafana:
           admin:
             existingSecret: grafana-admin
-            userKey: admin
-            passwordKey: AbdouJdidi2003.
+            userKey: admin-user
+            passwordKey: admin-password
           ingress:
             enabled: true
             ingressClassName: traefik
