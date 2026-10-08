@@ -7,6 +7,6 @@ module "cluster" {
   worker_count    = var.worker_count
   kubeconfig_path = abspath("${path.root}/kubeconfig-${var.cluster_name}")
   http_port       = var.http_port
-  https_port = var.https_port
-  
+  https_port      = var.https_port
+
 }

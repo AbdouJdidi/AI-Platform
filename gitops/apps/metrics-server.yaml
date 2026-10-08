@@ -1,0 +1,30 @@
+# metrics-server = the cluster's "live gauge" for CPU and memory.
+# Without it: `kubectl top` fails and autoscaling (HPA/KEDA) can't work.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-server
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes-sigs.github.io/metrics-server/
+    chart: metrics-server
+    targetRevision: 3.14.0
+    helm:
+      releaseName: metrics-server
+      valuesObject:
+        # kind's kubelets use self-signed certificates, so metrics-server must
+        # skip certificate verification. OK for a local lab, NEVER in production.
+        args:
+          - --kubelet-insecure-tls
+        resources:
+          requests: { cpu: 25m, memory: 48Mi }
+          limits: { memory: 128Mi }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

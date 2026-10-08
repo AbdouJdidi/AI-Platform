@@ -1,0 +1,95 @@
+# CI = automatic quality gate. Runs on every push to main and on every pull request.
+# Goal: catch mistakes BEFORE Argo CD deploys them to the cluster.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: the pipeline can only READ the repo. Nothing else.
+permissions:
+  contents: read
+
+# A new push cancels the older run of the same branch (saves minutes).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------- Terraform
+  terraform:
+    name: Terraform (format + validate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Third-party actions are pinned to a commit SHA, not a tag: a tag can be
+      # moved by the maintainer (or an attacker), a commit SHA cannot.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.5
+          terraform_wrapper: false
+
+      # Fails if any file is not formatted the standard way.
+      - name: terraform fmt
+        run: terraform fmt -check -recursive -diff
+
+      # init -backend=false: download providers only, never touch any state.
+      # validate: checks syntax and internal consistency, creates nothing.
+      - name: terraform validate (every root module)
+        run: |
+          for dir in infra/local platform; do
+            echo "::group::$dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+            echo "::endgroup::"
+          done
+
+  # --------------------------------------------------------------- Kubernetes
+  manifests:
+    name: Kubernetes manifests (schema check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Download a tool AND verify its fingerprint (sha256) before running it.
+      - name: Install kubeconform
+        run: |
+          curl -sSfL -o kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
+          echo "9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883  kc.tgz" | sha256sum -c -
+          tar xzf kc.tgz kubeconform
+
+      # -strict: unknown or misspelled fields are errors.
+      # The 2nd schema source teaches it Argo CD's custom resource (Application).
+      - name: Validate manifests
+        run: |
+          ./kubeconform -strict -summary \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            apps gitops
+
+  # ----------------------------------------------------------------- Security
+  security:
+    name: Security (Trivy config scan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Trivy
+        run: |
+          curl -sSfL -o trivy.tgz https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz
+          echo "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f  trivy.tgz" | sha256sum -c -
+          tar xzf trivy.tgz trivy
+
+      # Informational: shows HIGH findings in the log but never fails the build.
+      - name: Report HIGH findings (not blocking yet)
+        run: ./trivy config --severity HIGH --exit-code 0 .
+
+      # The gate: any CRITICAL misconfiguration fails the pipeline.
+      # Ratchet plan: once the HIGH findings are fixed, change this to HIGH,CRITICAL.
+      - name: Gate on CRITICAL findings
+        run: ./trivy config --severity CRITICAL --exit-code 1 .

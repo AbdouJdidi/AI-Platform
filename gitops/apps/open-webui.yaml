@@ -1,3 +1,5 @@
+# Open WebUI = chat interface for the LLM served by Ollama on the host.
+# Manifests live in apps/open-webui/ (Terraform owns platform/, Argo CD owns apps/).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/AbdouJdidi/AI-Platform.git
     targetRevision: main
-    path: platform/open-webui
+    path: apps/open-webui
   destination:
     server: https://kubernetes.default.svc
     namespace: open-webui
