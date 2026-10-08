@@ -7,7 +7,7 @@ metadata:
   labels:
     app: whoami
 spec:
-  replicas: 2                 # 2 copies (pods), spread over your 2 workers
+  replicas: "two"               
   selector:
     matchLabels:
       app: whoami             # "the pods I manage are the ones labeled app=whoami"
