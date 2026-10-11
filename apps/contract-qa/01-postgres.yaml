@@ -1,5 +1,4 @@
-# Postgres + pgvector for Contract QA. The secret `contract-qa-db` is created
-# by hand (same convention as grafana-admin), so no password lives in git.
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -29,7 +28,8 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: pgvector/pgvector:pg16
+          image: contract-qa-pg:local
+          imagePullPolicy: Never
           ports:
             - containerPort: 5432
               name: postgres
