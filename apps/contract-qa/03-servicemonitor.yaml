@@ -1,0 +1,14 @@
+# Prometheus scrapes /metrics (kube-prometheus-stack selects ServiceMonitors
+# from every namespace). Series: contractqa_ask_total{outcome}, contractqa_ask_seconds.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: contract-qa
+spec:
+  selector:
+    matchLabels:
+      app: contract-qa
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
